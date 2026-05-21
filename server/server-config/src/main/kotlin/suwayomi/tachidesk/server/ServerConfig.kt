@@ -1023,7 +1023,7 @@ class ServerConfig(
     )
 
     val opdsSkipChapterMetadataFeed: MutableStateFlow<Boolean> by BooleanSetting(
-        protoNumber = 86,
+        protoNumber = 87,
         group = SettingGroup.OPDS,
         privacySafe = true,
         defaultValue = false,
