@@ -35,6 +35,11 @@ object OpdsEntryBuilder {
         page: String,
     ) = "/api/v1/manga/$mangaId/chapter/$sourceOrder/page/$page?opds=true"
 
+    fun cbzUrl(
+        userId: Int,
+        chapterId: Int,
+    ) = "/api/v1/chapter/$chapterId/download?markAsRead=${userConfig.opdsMarkAsReadOnDownload.value(userId)}&opds=true"
+
     /**
      * Builds a concise summary for a manga entry, including status, source, and language.
      * @param entry The manga data object.
@@ -126,7 +131,7 @@ object OpdsEntryBuilder {
      * Resolves the display title for a chapter, ensuring an empty name falls back to
      * a generic "Chapter X" or "Oneshot" to keep the OPDS feed clean and usable.
      */
-    private fun resolveChapterTitle(
+    fun resolveChapterTitle(
         chapterName: String,
         chapterNumber: Float,
         sourceOrder: Int,
@@ -346,7 +351,7 @@ object OpdsEntryBuilder {
             links.add(
                 OpdsLinkXml(
                     OpdsConstants.LINK_REL_ACQUISITION_OPEN_ACCESS,
-                    "/api/v1/chapter/${chapter.id}/download?markAsRead=${userConfig.opdsMarkAsReadOnDownload.value(userId)}&opds=true",
+                    cbzUrl(userId, chapter.id),
                     userConfig.opdsCbzMimetype.value(userId).mediaType,
                     MR.strings.opds_linktitle_download_cbz.localized(locale),
                     length = cbzFileSize,
@@ -420,6 +425,13 @@ object OpdsEntryBuilder {
                 )
             }
         }
+        links.add(
+            OpdsLinkXml(
+                OpdsConstants.LINK_REL_PROGRESSION,
+                Opds2FeedBuilder.progressionUrl(chapter.id),
+                OpdsConstants.TYPE_OPDS_PROGRESSION,
+            ),
+        )
         if (isListEntry) {
             manga.thumbnailUrl?.let { thumbnailUrl(manga.id) }?.let {
                 links.add(OpdsLinkXml(OpdsConstants.LINK_REL_IMAGE, it, OpdsConstants.TYPE_IMAGE_JPEG))

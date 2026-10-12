@@ -22,6 +22,11 @@ object ChapterUserTable : IntIdTable() {
     val lastPageRead = integer("last_page_read").default(0)
     val lastReadAt = long("last_read_at").default(0)
 
+    // Device that sent the progress through OPDS, at that progress time
+    val progressDeviceId = varchar("progress_device_id", 2048).nullable()
+    val progressDeviceName = varchar("progress_device_name", 256).nullable()
+    val progressDeviceAt = long("progress_device_at").default(0)
+
     val isDownloaded = bool("is_downloaded").default(false)
     val isDownloadRequested = bool("is_download_requested").default(false)
 

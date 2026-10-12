@@ -328,6 +328,7 @@ object MangaRepository {
     fun findMangaByCriteria(
         userId: Int,
         criteria: OpdsSearchCriteria,
+        pageNum: Int,
     ): Pair<List<OpdsMangaAcqEntry>, Long> =
         transaction {
             val conditions = mutableListOf<Op<Boolean>>()
@@ -363,9 +364,11 @@ object MangaRepository {
                     .orderBy(MangaTable.title to SortOrder.ASC)
 
             val totalCount = query.count()
+            val itemsPerPage = opdsItemsPerPage(userId)
             val mangas =
                 query
-                    .limit(opdsItemsPerPage(userId))
+                    .limit(itemsPerPage)
+                    .offset(((pageNum - 1) * itemsPerPage).toLong())
                     .map { it.toOpdsMangaAcqEntry() }
             Pair(mangas, totalCount)
         }

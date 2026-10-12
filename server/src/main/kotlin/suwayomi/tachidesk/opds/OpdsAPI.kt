@@ -1,8 +1,11 @@
 package suwayomi.tachidesk.opds
 
+import io.javalin.apibuilder.ApiBuilder.after
 import io.javalin.apibuilder.ApiBuilder.get
 import io.javalin.apibuilder.ApiBuilder.path
+import io.javalin.apibuilder.ApiBuilder.put
 import suwayomi.tachidesk.opds.controller.OpdsV1Controller
+import suwayomi.tachidesk.opds.controller.OpdsV2Controller
 
 object OpdsAPI {
     fun defineEndpoints() {
@@ -84,6 +87,29 @@ object OpdsAPI {
             path("series/{seriesId}/chapter/{chapterIndex}/metadata") {
                 get(OpdsV1Controller.chapterMetadataFeed)
             }
+        }
+
+        path("opds/v2.0") {
+            get(OpdsV2Controller.rootFeed)
+            get("auth", OpdsV2Controller.authentication)
+            get("history", OpdsV2Controller.chaptersFeed(updates = false))
+            get("library-updates", OpdsV2Controller.chaptersFeed(updates = true))
+            get("explore", OpdsV2Controller.exploreSourcesFeed)
+            get("explore/source/{sourceId}", OpdsV2Controller.exploreSourceFeed)
+            path("library") {
+                get("series", OpdsV2Controller.seriesFeed)
+                listOf("sources", "categories", "genres", "statuses", "languages").forEach {
+                    get(it, OpdsV2Controller.libraryNavigationFeed(it))
+                }
+            }
+            get("series/{seriesId}/chapters", OpdsV2Controller.seriesChaptersFeed)
+            path("chapters/{chapterId}") {
+                get(OpdsV2Controller.publication)
+                get("manifest", OpdsV2Controller.manifest)
+                get("progression", OpdsV2Controller.progression)
+                put("progression", OpdsV2Controller.updateProgression)
+            }
+            after(OpdsV2Controller::sendAuthenticationDocument)
         }
     }
 }

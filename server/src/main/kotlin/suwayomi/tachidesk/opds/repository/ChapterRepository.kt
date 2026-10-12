@@ -173,12 +173,13 @@ object ChapterRepository {
 
     suspend fun getChapterDetailsForMetadataFeed(
         userId: Int,
-        mangaId: Int,
-        chapterSourceOrder: Int,
+        mangaId: Int? = null,
+        chapterSourceOrder: Int? = null,
+        chapterId: Int? = null,
     ): OpdsChapterListAcqEntry? {
         val chapterDataClass =
             try {
-                getChapterDownloadReady(userId = userId, chapterIndex = chapterSourceOrder, mangaId = mangaId)
+                getChapterDownloadReady(userId, chapterId, chapterSourceOrder, mangaId)
             } catch (e: Exception) {
                 return null
             }
@@ -210,7 +211,8 @@ object ChapterRepository {
             cbzFileSize =
                 if (chapterUser?.isDownloaded == true) {
                     withContext(Dispatchers.IO) {
-                        runCatching { ChapterDownloadHelper.getChapterArchiveSize(mangaId, chapterDataClass.id) }.getOrNull()
+                        runCatching { ChapterDownloadHelper.getChapterArchiveSize(chapterDataClass.mangaId, chapterDataClass.id) }
+                            .getOrNull()
                     }
                 } else {
                     null

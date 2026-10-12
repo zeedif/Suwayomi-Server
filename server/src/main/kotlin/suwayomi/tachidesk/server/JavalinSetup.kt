@@ -244,9 +244,10 @@ object JavalinSetup {
                     !ctx.path().substring(1).contains('/') &&
                     listOf(".png", ".jpg", ".ico").any { ctx.path().endsWith(it) }
             val isPreFlight = ctx.method() == HandlerType.OPTIONS
+            val isOpdsAuthentication = ctx.path() == ServerSubpath.maybeAddAsPrefix("/api/opds/v2.0/auth")
             val isApi = ctx.path().startsWith(ServerSubpath.maybeAddAsPrefix("/api/"))
 
-            val requiresAuthentication = !isPreFlight && !isPageIcon && !isWebManifest
+            val requiresAuthentication = !isPreFlight && !isPageIcon && !isWebManifest && !isOpdsAuthentication
             if (!requiresAuthentication) {
                 return@beforeMatched
             }

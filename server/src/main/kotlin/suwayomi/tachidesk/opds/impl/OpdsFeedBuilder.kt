@@ -9,6 +9,7 @@ import suwayomi.tachidesk.manga.model.table.ChapterTable
 import suwayomi.tachidesk.opds.constants.OpdsConstants
 import suwayomi.tachidesk.opds.dto.OpdsMangaFilter
 import suwayomi.tachidesk.opds.dto.OpdsSearchCriteria
+import suwayomi.tachidesk.opds.dto.OpdsSeriesChapters
 import suwayomi.tachidesk.opds.dto.PrimaryFilterType
 import suwayomi.tachidesk.opds.model.OpdsContentXml
 import suwayomi.tachidesk.opds.model.OpdsEntryXml
@@ -140,7 +141,7 @@ object OpdsFeedBuilder {
         criteria: OpdsSearchCriteria,
         pageNum: Int,
     ): String {
-        val (mangaEntries, total) = MangaRepository.findMangaByCriteria(userId, criteria)
+        val (mangaEntries, total) = MangaRepository.findMangaByCriteria(userId, criteria, pageNum)
         val builder =
             FeedBuilderInternal(
                 userId = userId,
@@ -660,33 +661,20 @@ object OpdsFeedBuilder {
     }
 
     /**
-     * Generates an acquisition feed for all chapters of a specific manga.
-     * @param baseUrl The base URL for constructing links.
-     * @param locale The locale for localization.
-     * @param mangaId The ID of the manga.
-     * @param pageNum The page number for pagination.
-     * @param sortParam The sorting parameter for chapters.
-     * @param filterParam The filtering parameter for chapters.
-     * @return An XML string representing the series' chapters feed.
+     * Gets a page of the chapters of a series with their facets, fetching the
+     * chapters from the source when there are none yet.
+     * @return null if the series does not exist.
      */
-    suspend fun getSeriesChaptersFeed(
+    suspend fun getSeriesChapters(
         userId: Int,
-        baseUrl: String,
+        feedUrl: String,
         locale: Locale,
         mangaId: Int,
         pageNum: Int,
         sortParam: String?,
         filterParam: String?,
-    ): String {
-        val mangaDetails =
-            MangaRepository.getMangaDetails(mangaId)
-                ?: return buildNotFoundFeed(
-                    userId,
-                    baseUrl,
-                    locale,
-                    "series/$mangaId/chapters",
-                    MR.strings.opds_error_manga_not_found.localized(locale, mangaId),
-                )
+    ): OpdsSeriesChapters? {
+        val mangaDetails = MangaRepository.getMangaDetails(mangaId) ?: return null
         val (sortColumn, currentSortOrder) =
             when (sortParam?.lowercase()) {
                 "asc", "number_asc" -> ChapterTable.sourceOrder to SortOrder.ASC
@@ -736,7 +724,51 @@ object OpdsFeedBuilder {
                 "${prefix}_$suffix"
             }
         val filterCounts = ChapterRepository.getChapterFilterCounts(userId, mangaId)
+        return OpdsSeriesChapters(
+            mangaDetails,
+            chapterEntries,
+            totalChapters,
+            actualSortParamForLinks,
+            currentFilter,
+            OpdsFacetBuilder.getChapterSortAndFilterFacets(
+                feedUrl,
+                locale,
+                actualSortParamForLinks,
+                currentFilter,
+                filterCounts,
+            ),
+        )
+    }
+
+    /**
+     * Generates an acquisition feed for all chapters of a specific manga.
+     * @param baseUrl The base URL for constructing links.
+     * @param locale The locale for localization.
+     * @param mangaId The ID of the manga.
+     * @param pageNum The page number for pagination.
+     * @param sortParam The sorting parameter for chapters.
+     * @param filterParam The filtering parameter for chapters.
+     * @return An XML string representing the series' chapters feed.
+     */
+    suspend fun getSeriesChaptersFeed(
+        userId: Int,
+        baseUrl: String,
+        locale: Locale,
+        mangaId: Int,
+        pageNum: Int,
+        sortParam: String?,
+        filterParam: String?,
+    ): String {
         val feedUrl = "series/$mangaId/chapters"
+        val (mangaDetails, chapterEntries, totalChapters, actualSortParamForLinks, currentFilter, facets) =
+            getSeriesChapters(userId, "$baseUrl/$feedUrl", locale, mangaId, pageNum, sortParam, filterParam)
+                ?: return buildNotFoundFeed(
+                    userId,
+                    baseUrl,
+                    locale,
+                    feedUrl,
+                    MR.strings.opds_error_manga_not_found.localized(locale, mangaId),
+                )
         val builder =
             FeedBuilderInternal(
                 userId = userId,
@@ -755,15 +787,7 @@ object OpdsFeedBuilder {
             builder.links.add(OpdsLinkXml(OpdsConstants.LINK_REL_IMAGE, it, OpdsConstants.TYPE_IMAGE_JPEG))
             builder.links.add(OpdsLinkXml(OpdsConstants.LINK_REL_IMAGE_THUMBNAIL, it, OpdsConstants.TYPE_IMAGE_JPEG))
         }
-        builder.facets.addAll(
-            OpdsFacetBuilder.getChapterSortAndFilterFacets(
-                "$baseUrl/$feedUrl",
-                locale,
-                actualSortParamForLinks,
-                currentFilter,
-                filterCounts,
-            ),
-        )
+        builder.facets.addAll(facets)
         val skipMetadata = userConfig.opdsSkipChapterMetadataFeed.value(userId)
         if (skipMetadata) OpdsChapterPrefetcher.prefetchPageCounts(chapterEntries)
         val syncResults =

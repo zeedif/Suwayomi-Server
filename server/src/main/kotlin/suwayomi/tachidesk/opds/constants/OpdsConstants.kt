@@ -31,10 +31,22 @@ object OpdsConstants {
     const val LINK_REL_LAST = "last"
     const val LINK_REL_PSE_STREAM = "http://vaemendis.net/opds-pse/stream"
     const val LINK_REL_SORT_NEW = "http://opds-spec.org/sort/new"
+    const val LINK_REL_PROGRESSION = "http://opds-spec.org/progression"
+    const val LINK_REL_AUTH_DOCUMENT = "http://opds-spec.org/auth/document"
 
     // Media Types
     const val TYPE_ATOM_XML_FEED_NAVIGATION = "application/atom+xml;profile=opds-catalog;kind=navigation"
     const val TYPE_ATOM_XML_FEED_ACQUISITION = "application/atom+xml;profile=opds-catalog;kind=acquisition"
     const val TYPE_OPENSEARCH_DESCRIPTION = "application/opensearchdescription+xml"
     const val TYPE_IMAGE_JPEG = "image/jpeg"
+    const val TYPE_OPDS2_FEED = "application/opds+json"
+    const val TYPE_OPDS2_PUBLICATION = "application/opds-publication+json"
+    const val TYPE_DIVINA = "application/divina+json"
+    const val TYPE_OPDS_PROGRESSION = "application/opds-progression+json"
+    const val TYPE_OPDS_AUTHENTICATION = "application/opds-authentication+json"
+    const val TYPE_PROBLEM = "application/problem+json"
+
+    // Profiles and authentication flows
+    const val PROFILE_DIVINA = "https://readium.org/webpub-manifest/profiles/divina"
+    const val AUTH_BASIC = "http://opds-spec.org/auth/basic"
 }
